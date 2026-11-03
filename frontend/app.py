@@ -9,7 +9,10 @@ from PIL import Image
 
 st.set_page_config(page_title="ROAD-GuardNet", page_icon="🛣️", layout="wide")
 
-API_URL = os.getenv("ROAD_GUARDNET_API", "http://127.0.0.1:8000")
+API_URL = os.getenv(
+    "ROAD_GUARDNET_API",
+    "https://road-guardnet-api.onrender.com"
+).rstrip("/")
 
 st.markdown("""
 <style>
