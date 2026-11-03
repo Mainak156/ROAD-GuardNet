@@ -1,0 +1,111 @@
+
+# ==========================================
+# ROAD-GuardNet - Git Ignore
+# ==========================================
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+RDDenv/
+.venv/
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Model weights and checkpoints
+*.pt
+*.pth
+*.onnx
+*.engine
+*.torchscript
+*.tflite
+*.weights
+
+# YOLO training outputs
+runs/
+runs/detect/
+runs/train/
+
+# Dataset files
+datasets/
+dataset/
+data/
+*.zip
+*.tar
+*.tar.gz
+
+# YOLO cache files
+*.cache
+
+# Testing images (ignore only if not intended for Git)
+# Testing_images/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
+*.sublime-workspace
+
+# Frontend dependencies
+node_modules/
+frontend/node_modules/
+
+# Frontend build outputs
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/out/
+
+# Backend temporary files
+backend/__pycache__/
+backend/.pytest_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# SQLite databases
+*.sqlite3
+*.db
+
+# OS files
+desktop.ini
+
+# Local model and dataset outputs
+output/
+outputs/
+predictions/
+artifacts/
+
+# Keep example configuration files
+!.env.example
