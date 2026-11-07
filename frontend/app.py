@@ -1,6 +1,8 @@
 
 import base64
+import binascii
 import hashlib
+import io
 import os
 
 import requests
@@ -8,7 +10,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 
 # ============================================================
@@ -120,6 +122,15 @@ def get_json(path, timeout=STATS_TIMEOUT):
         return None, "Backend returned an invalid JSON response."
 
 
+def as_number(value, default=0.0):
+    """Safely convert API values to a number for display."""
+    try:
+        number = float(value)
+        return number if pd.notna(number) else default
+    except (TypeError, ValueError):
+        return default
+
+
 # ============================================================
 # 4. SIDEBAR NAVIGATION
 # ============================================================
@@ -145,12 +156,13 @@ st.sidebar.caption(
 # 5. BACKEND HEALTH CHECK
 # ============================================================
 
-with st.spinner("Connecting to ROAD-GuardNet backend..."):
+@st.cache_data(ttl=20, show_spinner=False)
+def check_backend_health():
+    return get_json("/health", timeout=HEALTH_TIMEOUT)
 
-    health, health_error = get_json(
-        "/health",
-        timeout=HEALTH_TIMEOUT
-    )
+
+with st.spinner("Connecting to ROAD-GuardNet backend..."):
+    health, health_error = check_backend_health()
 
 if health_error:
 
@@ -233,10 +245,12 @@ if page == "Dashboard":
 
             c3.metric(
                 "Average inference",
-                f"{inference_time:.1f} ms"
+                f"{as_number(inference_time):.1f} ms"
             )
 
-            history = stats.get("history", [])
+            history = stats.get("history") or []
+            if not isinstance(history, list):
+                history = []
 
             if images_processed == 0:
 
@@ -325,11 +339,21 @@ elif page == "Detect Damage":
 
         try:
 
-            original = Image.open(uploaded_bytes).convert("RGB")
+            # PIL expects a file-like object, not raw bytes.
+            with Image.open(io.BytesIO(uploaded_bytes)) as image:
+                image.verify()
 
-        except Exception:
+            # Reopen after verify() and fully decode the image.
+            with Image.open(io.BytesIO(uploaded_bytes)) as image:
+                original = image.convert("RGB")
+                original.load()
 
-            st.error("Invalid image. Please upload a valid image file.")
+        except (UnidentifiedImageError, OSError, ValueError) as e:
+
+            st.error(
+                "Invalid or corrupted image. Please upload a valid "
+                f"JPG, PNG, or WEBP file. Details: {e}"
+            )
 
             st.stop()
 
@@ -435,7 +459,8 @@ elif page == "Detect Damage":
 
                 except (requests.exceptions.RequestException,
                         ValueError,
-                        KeyError) as e:
+                        KeyError,
+                        binascii.Error) as e:
 
                     st.error(
                         f"Detection request failed: {e}"
@@ -476,10 +501,12 @@ elif page == "Detect Damage":
 
             m2.metric(
                 "Inference time",
-                f'{data.get("inference_time_ms", 0):.1f} ms'
+                f'{as_number(data.get("inference_time_ms")):.1f} ms'
             )
 
-            detections = data.get("detections", [])
+            detections = data.get("detections") or []
+            if not isinstance(detections, list):
+                detections = []
 
             if detections:
 
@@ -491,7 +518,7 @@ elif page == "Detect Damage":
 
                     det_df["bbox"] = det_df["bbox"].apply(
                         lambda x: ", ".join(
-                            f"{v:.1f}" for v in x
+                            f"{as_number(v):.1f}" for v in x
                         ) if isinstance(x, (list, tuple)) else str(x)
                     )
 
@@ -566,7 +593,9 @@ elif page == "Analytics":
                 total_detections
             )
 
-            counts = stats.get("class_counts", {})
+            counts = stats.get("class_counts") or {}
+            if not isinstance(counts, dict):
+                counts = {}
 
             if counts:
 
@@ -596,7 +625,9 @@ elif page == "Analytics":
                     "Analytics will appear after the first successful prediction."
                 )
 
-            history = stats.get("history", [])
+            history = stats.get("history") or []
+            if not isinstance(history, list):
+                history = []
 
             if history:
 
